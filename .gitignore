@@ -1,0 +1,9 @@
+out
+dist
+node_modules
+.vscode-test/
+*.vsix
+setenv.bat
+publishvsix.bat
+vsc-extension-quickstart.md
+package-lock.json
