@@ -2,6 +2,7 @@
 
 Make dart code style like C# code style when write '{'.
 
+
 ## Features
 
 ## Requirements
@@ -13,6 +14,4 @@ Make dart code style like C# code style when write '{'.
 ## Known Issues
 
 ## Release Notes
-
-
-### 0.0.1
+	Beta 0.0.1 use 'from VISX install' to install 
