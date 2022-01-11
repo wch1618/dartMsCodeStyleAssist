@@ -27,6 +27,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	let te = vscode.workspace.onDidChangeTextDocument(async (ev) => {
 		if (ev.reason) return; //修复撤销问题
 		let fn = ev.document.fileName;
+		if (path.extname(fn) !== ".dart") return;
+
 		let beSetLines: number[] = [];
 		//console.log('reason:' + ev.reason);
 		ev.contentChanges.forEach(cc => {
@@ -76,7 +78,7 @@ export function deactivate() { }
 
 function checkNeedAddAssistComment(line: vscode.TextLine) {
 	return (line.firstNonWhitespaceCharacterIndex < 4
-		|| /\b(while|for)\b/ig.test(line.text))
+		|| /\b(while|for|if|else|try|catch|final|do|while|class)\b/ig.test(line.text))
 		&& line.text.charAt(line.text.length - 1) === '{'
 		&& line.text.length - line.firstNonWhitespaceCharacterIndex > 1;
 }
@@ -92,7 +94,7 @@ function addMsCodeStyleAssistComment(editor: vscode.TextEditor, beSetLines: numb
 			if (line.text.charAt(line.text.length - 1) === '{' && line.text.length > 1) {
 
 				let lastSecondChar = line.text.charAt(line.text.length - 2);
-				if (/\b(while|for)\b/ig.test(line.text)
+				if (/\b(while|for|if|else|try|catch|final|do|while|class)\b/ig.test(line.text)
 					|| line.firstNonWhitespaceCharacterIndex < 2) {
 					cb.insert(new vscode.Position(line.lineNumber, line.text.length - 1)
 						, (lastSecondChar === " " ? "" : " ") + "//\n" + line.text.substring(0, line.firstNonWhitespaceCharacterIndex));
@@ -101,13 +103,14 @@ function addMsCodeStyleAssistComment(editor: vscode.TextEditor, beSetLines: numb
 					let isClass = true;
 					for (let i = line.lineNumber - 1; i >= 0; i--) {
 						let nline = doc.lineAt(i);
-						if (nline.firstNonWhitespaceCharacterIndex === 0
-							&& !nline.isEmptyOrWhitespace
-							&& nline.text.substring(nline.firstNonWhitespaceCharacterIndex, 1) !== '{') {
+
+						let text = nline.text;
+
+						if (text.indexOf('=') >= 0 || nline.isEmptyOrWhitespace
+							|| text.substring(text.length - 1, text.length) !== '{' 
+							|| text.startsWith("/", nline.firstNonWhitespaceCharacterIndex)) {
 							//console.log('line ' + i + ":" + nline.text);
-							if (!/\bclass\b/ig.test(nline.text)) {
-								isClass = false;
-							}
+							isClass = false;
 							break;
 						}
 					}
