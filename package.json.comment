@@ -1,0 +1,6 @@
+		"themes": [
+			{
+				"label": "dartcodeexcolor",
+				"path": "./theme/dartcodeexcolor-color-theme.json"
+			}
+		],

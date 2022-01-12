@@ -31,7 +31,14 @@
 					"when":"resourceLangId == dart && editorTextFocus && !editorReadonly && !inCompositeEditor"
 				}
 			]
-		}
+		},
+		"semanticTokenTypes": [
+			{
+				"id": "emptycomment",
+				"superType": "comment",
+				"description": "empty comment, ignore"
+			}
+		]
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",

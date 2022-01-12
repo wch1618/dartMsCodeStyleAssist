@@ -1,0 +1,17 @@
+{
+	"name": "dartexcodecolor",
+	"type": "dark",
+	"tokenColors": [
+		{
+			"name": "emptycomment",
+			"scope": [
+				"emptycomment"
+			],
+			"settings": {
+				"fontStyle": "italic",
+				"foreground": "#202020"
+			}
+		},
+		
+	]
+}

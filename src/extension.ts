@@ -2,6 +2,7 @@
 
 import path = require('path');
 import * as vscode from 'vscode';
+import { DocumentSemanticTokensProvider } from './semantic_provider';
 
 //export const dartCodeExtensionIdentifier = "Dart-Code.dart-code";
 
@@ -72,15 +73,30 @@ export async function activate(context: vscode.ExtensionContext) {
 	});
 
 	subs.push(disposable);
+
+	//以下功能有问题
+	// const semanProvider = new DocumentSemanticTokensProvider();
+
+	// const selectorLanguage = 'dart';
+	// const selector: vscode.DocumentFilter[] = [{ language: selectorLanguage, scheme: "file" }];
+
+	// subs.push(vscode.languages.registerDocumentSemanticTokensProvider(selector, semanProvider, semanProvider.legend));
 }
 
 export function deactivate() { }
 
+//while|for|if|else|try|catch|final|do|while|class|extension
+
 function checkNeedAddAssistComment(line: vscode.TextLine) {
+	const text = line.text;
 	return (line.firstNonWhitespaceCharacterIndex < 4
-		|| /\b(while|for|if|else|try|catch|final|do|while|class)\b/ig.test(line.text))
-		&& line.text.charAt(line.text.length - 1) === '{'
-		&& line.text.length - line.firstNonWhitespaceCharacterIndex > 1;
+		|| /\b(class|extension|abstract)\b/.test(line.text))
+		&& text.charAt(text.length - 1) === '{' //行尾为{
+		&& text.length - line.firstNonWhitespaceCharacterIndex > 1 //长度2 以上
+		&& !/\s*\/\//.test(text) //不能是注释//开头
+		&& !/\/\s*{$/.test(text) //不能是/ {结尾，排除准备加注释时只打了一个/的问题
+		&& text.indexOf('=') < 0
+		;
 }
 
 
@@ -91,29 +107,23 @@ function addMsCodeStyleAssistComment(editor: vscode.TextEditor, beSetLines: numb
 		beSetLines.forEach(e => {
 			let line = doc.lineAt(e);
 
-			if (line.text.charAt(line.text.length - 1) === '{' && line.text.length > 1) {
+			const text = line.text;
+			if (text.charAt(text.length - 1) === '{' //行尾为{
+				&& text.length > 1) {
 
-				let lastSecondChar = line.text.charAt(line.text.length - 2);
-				if (/\b(while|for|if|else|try|catch|final|do|while|class)\b/ig.test(line.text)
+				let lastSecondChar = text.charAt(text.length - 2);
+				if (/\b(class|extension|abstract)\b/ig.test(text)
 					|| line.firstNonWhitespaceCharacterIndex < 2) {
-					cb.insert(new vscode.Position(line.lineNumber, line.text.length - 1)
-						, (lastSecondChar === " " ? "" : " ") + "//\n" + line.text.substring(0, line.firstNonWhitespaceCharacterIndex));
+					cb.insert(new vscode.Position(line.lineNumber, text.length - 1)
+						, (lastSecondChar === " " ? "" : " ") + "//\n" + text.substring(0, line.firstNonWhitespaceCharacterIndex));
 				}
 				else if (line.firstNonWhitespaceCharacterIndex < 4) {
+
 					let isClass = true;
-					for (let i = line.lineNumber - 1; i >= 0; i--) {
-						let nline = doc.lineAt(i);
-
-						let text = nline.text;
-
-						if (text.indexOf('=') >= 0 || nline.isEmptyOrWhitespace
-							|| text.substring(text.length - 1, text.length) !== '{' 
-							|| text.startsWith("/", nline.firstNonWhitespaceCharacterIndex)) {
-							//console.log('line ' + i + ":" + nline.text);
-							isClass = false;
-							break;
-						}
+					if(text.indexOf('=') >= 0){
+						isClass = false;
 					}
+
 					if (isClass) {
 						cb.insert(new vscode.Position(line.lineNumber, line.text.length - 1)
 							, (lastSecondChar === " " ? "" : " ") + "//\n" + line.text.substring(0, line.firstNonWhitespaceCharacterIndex));
