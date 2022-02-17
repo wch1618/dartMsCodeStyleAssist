@@ -24,10 +24,12 @@ export async function activate(context: vscode.ExtensionContext) {
 	// 	console.error("The Dart extension did not provide an exported API. Maybe it failed to activate?");
 	// 	return;
 	// }
-
+	//let counter = {value : 1};
 	let te = vscode.workspace.onDidChangeTextDocument(async (ev) => {
-		if (ev.reason) return; //修复撤销问题
-
+		if (ev.reason) {
+			// console.log('reason:' + ev.reason);
+			return; //修复撤销问题
+		}
 		const doc = ev.document;
 
 		let fn = doc.fileName;
@@ -36,15 +38,19 @@ export async function activate(context: vscode.ExtensionContext) {
 		let map = new Map<number, number>();
 
 		let beAddLines: TData[] = [];
-		//console.log('reason:' + ev.reason);
+		
 		for (let i = 0; i < ev.contentChanges.length; i++) {
 			let cc = ev.contentChanges[i];
+			if(/\/\/\s*$/.test(cc.text)) continue;	//忽略 //\r\n
+
 			let line = doc.lineAt(doc.positionAt(cc.rangeOffset));
 
 			checkAddLine(doc, line, beAddLines, map);
 
 		}
 
+		// console.log("changed " + counter.value++ + ": " + ev.contentChanges.length);
+		// console.log(ev.contentChanges);
 
 		if (beAddLines.length > 0) {
 			new Promise((so, re) => {
@@ -103,6 +109,30 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	subs.push(disposable);
 
+	//删除空注释//
+	disposable = vscode.commands.registerCommand('dartmscodestyle.deleteEmptyLineComment', (...args) => {
+		//console.log(args);
+		if (args && args[0] instanceof vscode.Uri) {
+			let uri = args[0] as vscode.Uri;
+			let uristr = uri.toString();
+			let editor = vscode.window.visibleTextEditors.find(v => v.document.uri.toString() === uristr);
+			if (editor) {
+				deleteEmptyLineComment(editor);
+			}
+
+		}
+		else {
+			if (vscode.window.activeTextEditor && vscode.window.activeTextEditor!.document.uri
+				&& path.extname(vscode.window.activeTextEditor!.document.uri.fsPath).toLowerCase() === ".dart") {
+				deleteEmptyLineComment(vscode.window.activeTextEditor);
+			}
+		}
+
+	});
+
+	subs.push(disposable);
+
+
 	//以下功能有问题
 	// const semanProvider = new DocumentSemanticTokensProvider();
 
@@ -114,7 +144,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() { }
 
-//while|for|if|else|try|catch|final|do|while|class|extension
+//while|for|if|else|try|catch|do|while|class|extension
 
 function checkNeedAddAssistComment(doc: vscode.TextDocument, line: vscode.TextLine) {
 	const text = line.text;
@@ -123,7 +153,8 @@ function checkNeedAddAssistComment(doc: vscode.TextDocument, line: vscode.TextLi
 		&& !/\/\//.test(text) //不能是行注释
 		&& !/\/\s*[{]\s*$/.test(text) //不能是/ {结尾，排除准备加注释时只打了一个/的问题
 		&& (
-			isTryFinallyStart(text) || isFunctionLike(doc, line) || isClassBlock(text)
+			/\b(else|finally|do)\b\s*\{$/.test(text)	//else|finally {
+			|| isTryFinallyStart(text) || isFunctionLike(doc, line) || isClassBlock(text)
 		);
 
 	return b;
@@ -190,7 +221,37 @@ function deleteAllLineComment(editor: vscode.TextEditor) {
 	}
 
 }
+//
+function deleteEmptyLineComment(editor: vscode.TextEditor) {
 
+	let doc = editor.document;
+	let lineCount = doc.lineCount;
+	let beDeleteLines: vscode.Range[] = [];
+	//TODO 
+	for (let i = 0; i < lineCount; i++) {
+		let line = doc.lineAt(i);
+		let m: RegExpExecArray | null;
+		let reg = /\s+\/\/\s*$/;
+		if(m = reg.exec(line.text)){
+			beDeleteLines.push(new vscode.Range(new vscode.Position(line.lineNumber, m.index), new vscode.Position(line.lineNumber , line.text.length)));
+		}
+		if (/\s+\/\/\s*$/.test(line.text)) {
+			
+		}
+	}
+
+	if (beDeleteLines.length > 0) {
+
+		editor.edit(cb => {
+
+			beDeleteLines.forEach(e => {
+				cb.delete(e);
+			});
+
+		});
+	}
+
+}
 //////
 //是否为(try|finally){
 function isTryFinallyStart(text: string) {
@@ -252,7 +313,7 @@ function isFunctionLike(doc: vscode.TextDocument, line: vscode.TextLine): boolea
 						pos = doc.lineAt(linePos).text.length;
 					}
 				}
-				if (linePos >= 0 && /[a-zA-Z_$][a-zA-Z_0-9$]*$/.test(doc.lineAt(linePos).text.substring(0, pos))) {
+				if (linePos >= 0 && /[a-zA-Z_$][a-zA-Z_0-9$]*\s*$/.test(doc.lineAt(linePos).text.substring(0, pos))) {
 					return true;
 				}
 			}

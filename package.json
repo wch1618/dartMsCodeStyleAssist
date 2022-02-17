@@ -26,6 +26,10 @@
 			{
 				"command": "dartmscodestyle.deleteAllLineComment",
 				"title": "删除所有行开头为'//'的注释"
+			},
+			{
+				"command": "dartmscodestyle.deleteEmptyLineComment",
+				"title": "删除空注释//*"
 			}
 		],
 		"menus": {
@@ -36,6 +40,11 @@
 				},
 				{
 					"command": "dartmscodestyle.deleteAllLineComment",
+					"when":"resourceLangId == dart && editorTextFocus && !editorReadonly && !inCompositeEditor",
+					"group": "9_cutcopypaste"
+				},
+				{
+					"command": "dartmscodestyle.deleteEmptyLineComment",
 					"when":"resourceLangId == dart && editorTextFocus && !editorReadonly && !inCompositeEditor",
 					"group": "9_cutcopypaste"
 				}
