@@ -3,7 +3,7 @@
 	"displayName": "dartmscodestyle",
 	"description": "make dart code style like ms",
 	"publisher": "zerolook",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"engines": {
 		"vscode": "^1.62.0"
 	},
@@ -22,6 +22,10 @@
 			{
 				"command": "dartmscodestyle.addcodestylecomment",
 				"title": "增加代码格式化辅助注释"
+			},
+			{
+				"command": "dartmscodestyle.deleteAllLineComment",
+				"title": "删除所有行开头为'//'的注释"
 			}
 		],
 		"menus": {
@@ -29,6 +33,11 @@
 				{
 					"command": "dartmscodestyle.addcodestylecomment",
 					"when":"resourceLangId == dart && editorTextFocus && !editorReadonly && !inCompositeEditor"
+				},
+				{
+					"command": "dartmscodestyle.deleteAllLineComment",
+					"when":"resourceLangId == dart && editorTextFocus && !editorReadonly && !inCompositeEditor",
+					"group": "9_cutcopypaste"
 				}
 			]
 		},
