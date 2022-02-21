@@ -38,10 +38,10 @@ export async function activate(context: vscode.ExtensionContext) {
 		let map = new Map<number, number>();
 
 		let beAddLines: TData[] = [];
-		
+
 		for (let i = 0; i < ev.contentChanges.length; i++) {
 			let cc = ev.contentChanges[i];
-			if(/\/\/\s*$/.test(cc.text)) continue;	//忽略 //\r\n
+			if (/\/\/\s*$/.test(cc.text)) continue;	//忽略 //\r\n
 
 			let line = doc.lineAt(doc.positionAt(cc.rangeOffset));
 
@@ -232,11 +232,11 @@ function deleteEmptyLineComment(editor: vscode.TextEditor) {
 		let line = doc.lineAt(i);
 		let m: RegExpExecArray | null;
 		let reg = /\s+\/\/\s*$/;
-		if(m = reg.exec(line.text)){
-			beDeleteLines.push(new vscode.Range(new vscode.Position(line.lineNumber, m.index), new vscode.Position(line.lineNumber , line.text.length)));
+		if (m = reg.exec(line.text)) {
+			beDeleteLines.push(new vscode.Range(new vscode.Position(line.lineNumber, m.index), new vscode.Position(line.lineNumber, line.text.length)));
 		}
 		if (/\s+\/\/\s*$/.test(line.text)) {
-			
+
 		}
 	}
 
@@ -263,6 +263,7 @@ function isFunctionLike(doc: vscode.TextDocument, line: vscode.TextLine): boolea
 	let text = line.text;
 	let pos = text.length;
 	let linePos = line.lineNumber;
+
 	if (/[)]\s*(async\s*){0,1}[{]\s*$/.test(text)) {
 		for (let i = text.length - 2; i >= line.firstNonWhitespaceCharacterIndex; i--) {
 			if (text[i] === ")") {
@@ -313,9 +314,49 @@ function isFunctionLike(doc: vscode.TextDocument, line: vscode.TextLine): boolea
 						pos = doc.lineAt(linePos).text.length;
 					}
 				}
-				if (linePos >= 0 && /[a-zA-Z_$][a-zA-Z_0-9$]*\s*$/.test(doc.lineAt(linePos).text.substring(0, pos))) {
-					return true;
+				if (linePos >= 0) {
+					let tt = doc.lineAt(linePos).text.substring(0, pos);
+					if (/\>$\s*$/.test(tt)) { // methodname<T>(){}
+						let tcount = 0;
+						let k = pos;
+						for (; k >= 0; k--) {
+							if (tt[k] === ">") {
+								break;
+							}
+						}
+						if (k >= 0) {
+
+							while (linePos >= 0) {
+								k--;
+								if (k < 0) {
+									linePos--;
+									if (linePos >= 0) {
+										tt = doc.lineAt(linePos).text;
+										k = tt.length;
+									} else {
+										break;
+									}
+
+								} else if (tt[k] === "<") {
+									if (tcount <= 0) {
+										tt = tt.substring(0, k);
+										break;
+									} else {
+										tcount--;
+									}
+								} else if (tt[k] === ">") {
+									tcount++;
+								}
+							}
+							
+						}
+					}
+
+					if (linePos >= 0 && /[a-zA-Z_$][a-zA-Z_0-9$]*\s*$/.test(tt)) {
+						return true;
+					}
 				}
+
 			}
 		}
 	}
