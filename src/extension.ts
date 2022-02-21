@@ -263,7 +263,7 @@ function isFunctionLike(doc: vscode.TextDocument, line: vscode.TextLine): boolea
 	let text = line.text;
 	let pos = text.length;
 	let linePos = line.lineNumber;
-	if (/[)]\s*[{]\s*$/.test(text)) {
+	if (/[)]\s*(async\s*){0,1}[{]\s*$/.test(text)) {
 		for (let i = text.length - 2; i >= line.firstNonWhitespaceCharacterIndex; i--) {
 			if (text[i] === ")") {
 				pos = i;
