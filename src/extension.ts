@@ -348,7 +348,7 @@ function isFunctionLike(doc: vscode.TextDocument, line: vscode.TextLine): boolea
 									tcount++;
 								}
 							}
-							
+
 						}
 					}
 
@@ -375,14 +375,47 @@ function isClassBlock(text: string): boolean {
  * @param line 
  * @returns 
  */
-function findAddLinePosition(line: vscode.TextLine): Array<TData> {
+function findAddLinePosition(doc: vscode.TextDocument, line: vscode.TextLine): Array<TData> {
 
 	let arr: TData[] = [];
 	//
 	const text = line.text;
 	var r = /[}]\s*(on|catch|finally|while|else)/ig;
+
 	for (let a of text.matchAll(r)) {
-		arr.push(new TData(new vscode.Position(line.lineNumber, a.index! + 1), line));
+		
+		let mat: number = -1;
+		let tline = line;
+		let idx = a.index!;
+		let tl = line.lineNumber;
+		do {
+			//找到前一个非空字符
+			for (; idx >= tline.firstNonWhitespaceCharacterIndex; idx--) {
+				if (tline.text[idx].trim().length === 0) continue;//空白跳过
+				if (tline.text[idx] === '}') {
+					mat = 1;	
+				} else {
+					mat = 0;
+				}
+				break;
+			}
+			if (mat !== -1) {
+				break;
+			} else {	//需要到上一行查找
+				if (tl-- >= 0) {
+					tline = doc.lineAt(tl);
+					idx = tline.text.length;
+				}
+				else {
+					break;
+				}
+			}
+		} while (true);
+
+		if (mat === 1) {
+			arr.push(new TData(new vscode.Position(line.lineNumber, a.index! + 1), line));
+		}
+
 	}
 	//.forEach((m, i) => m.forEach((v, j) => console.log(`group ${i},${j} : ${v}`)));
 
@@ -397,7 +430,7 @@ function checkAddLine(doc: vscode.TextDocument, line: vscode.TextLine, beAddLine
 		beAddLines.push(new TData(new vscode.Position(line.lineNumber, line.text.length - 1), line));
 		map.set(line.lineNumber, line.lineNumber);
 	}
-	let pps = findAddLinePosition(line);
+	let pps = findAddLinePosition(doc, line);
 	if (pps.length > 0) {
 		beAddLines.push(...pps);
 	}
